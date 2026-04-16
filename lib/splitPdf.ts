@@ -114,7 +114,7 @@ export async function splitPdf(
     const pageBytes = await out.save({ useObjectStreams: true });
     pages.push({
       index: i,
-      name: `${baseName} - ${stem}.pdf`,
+      name: `${stem}.pdf`,
       label: cleanLabel,
       bytes: pageBytes,
       size: pageBytes.byteLength,
