@@ -1,5 +1,6 @@
 import { PDFDocument } from "pdf-lib";
 import { extractPageNames } from "./pageNames";
+import { withIsolatedPage } from "./isolatePage";
 
 export interface SplitPage {
   index: number;         // 0-based original page index
@@ -99,7 +100,11 @@ export async function splitPdf(
     const titleMeta = cleanLabel ?? `${baseName}-page-${pad(i + 1, width)}`;
 
     const out = await PDFDocument.create();
-    const [copied] = await out.copyPages(source, [i]);
+    // Copy only what this page actually uses (see isolatePage.ts) so each
+    // split file isn't bloated with every other sheet's images and fonts.
+    const [copied] = await withIsolatedPage(source, i, () =>
+      out.copyPages(source, [i])
+    );
     out.addPage(copied);
     // Give each split file a unique Title/Subject so tools like OST that
     // label by PDF metadata (not just filename) show the correct page name.

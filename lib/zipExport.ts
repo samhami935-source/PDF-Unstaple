@@ -12,14 +12,26 @@ export async function exportZip(
   for (const p of pages) {
     folder.file(p.name, p.bytes);
   }
-  const blob = await zip.generateAsync(
-    {
-      type: "blob",
-      compression: "DEFLATE",
-      compressionOptions: { level: 6 },
-    },
-    (meta) => onProgress?.(meta.percent)
-  );
+  let blob: Blob;
+  try {
+    blob = await zip.generateAsync(
+      {
+        type: "blob",
+        // PDFs are already compressed internally; STORE avoids burning CPU and
+        // a second in-memory copy of every file for ~0% size savings.
+        compression: "STORE",
+        streamFiles: true,
+      },
+      (meta) => onProgress?.(meta.percent)
+    );
+  } catch (e) {
+    if (e instanceof RangeError) {
+      throw new Error(
+        "This batch is too large for the browser to zip in memory. Try removing some pages, or download pages individually."
+      );
+    }
+    throw e;
+  }
   saveAs(blob, `${batchName}.zip`);
 }
 
